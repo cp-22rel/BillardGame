@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="#">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billard</title>
+</head>
+
+<body id="body">
+    <canvas id="cnvDisplay" width="2500px" height="1000px"></canvas>
+
+
+    <script type="module">
+        import { Ball, BALLSTATE } from "./src/ball.mjs";
+        import { Vector } from "./src/vector.mjs";
+        import { VisualVector } from "./src/visual_vector.mjs";
+        import { Player } from "./src/player.mjs";
+        import { UIManager } from "./src/ui_manager.mjs";
+        import { EndGameUI } from "./src/ui/end_game_ui.mjs";
+        import { ParticleManager } from "./src/particle_system/particle_manager.mjs";
+
+
+        const backgroundTexture = new Image();
+        backgroundTexture.src = "./assets/pool_bg.png";
+
+        const cnv = document.getElementById("cnvDisplay");
+        const context = cnv.getContext("2d");
+
+        const GAMESTATES = {
+            running: "running",
+            paused: "paused",
+            positionBall: "positionBall",
+        }
+
+        const map = {
+            players: {
+                player1: new Player(1, ""),
+                player2: new Player(2, ""),
+            },
+
+            currentPlayer: null,
+            currentGameState: GAMESTATES.running,
+            playerBall: null,
+            debug: false,
+            position: new Vector(100, 100),
+            size: new Vector(1000, 1000),
+            canvas: {
+                size: Vector.zero(),
+            },
+            maxShotPower: 50,
+            shotForceMultiplier: 0.2,
+            ballCount: 16,
+            ballRadius: 30,
+            delayBTWFram: 10,
+            friction: 0.08,
+            velocityLost: 0.00002,
+            ballElasticity: 0.5,
+            airDensity: 0.01,
+            gravity: 9.81,
+            inRound: true,
+            torqueMultiplier: 300,
+
+
+            roundEventLog: {
+                colisions: [],
+                events: [],
+            },
+
+            visualVector: null,
+            removeBall: function (ball) {
+                map.balls = map.balls.filter((b) => b != ball);
+                updateBallLogic(ball);
+            },
+            setPlayerBall: function (ball) {
+                ball.visible = false;
+                ball.position = new Vector(-ball.radius, - ball.radius);
+                ball.newVelocity = Vector.zero();
+                map.roundEventLog.events.push("SinkBall");
+            },
+
+            balls: [],
+
+            ballImages: [],
+
+            ballPos: [
+                new Vector(0.5, 1), //0
+                new Vector(1.18, 1), //1
+                new Vector(1.25, 0.93), //2
+                new Vector(1.32, 1.15),  //3
+                new Vector(1.4, 1.1), //4
+                new Vector(1.4, 0.8), //5
+                new Vector(1.47, 1.27), //6
+                new Vector(1.47, 0.85), //7
+                new Vector(1.32, 1), //8
+                new Vector(1.25, 1.07), //9
+                new Vector(1.32, 0.85), //10
+                new Vector(1.4, 1.2), //11
+                new Vector(1.4, 0.92), //12
+                new Vector(1.47, 1), //13
+                new Vector(1.47, 1.15), //14
+                new Vector(1.47, 0.73), //15
+            ],
+
+            goalPosition: [],
+        };
+
+        function init() {
+            cnv.addEventListener("mousemove", mouseMove);
+            cnv.addEventListener("mousedown", mouseDown);
+            cnv.addEventListener("mouseup", mouseUp);
+
+            const relSize = Math.min(window.innerWidth, window.innerHeight * 2);
+
+            cnv.width = relSize;
+            cnv.height = relSize / 2;
+
+            map.size = new Vector(cnv.width - map.position.x - cnv.offsetLeft, cnv.height - map.position.y - cnv.offsetTop);
+
+            map.canvas.size = new Vector(cnv.width, cnv.height);
+
+            context.imageSmoothingEnabled = false;
+
+            for (let i = 0; i < map.ballCount; i++) {
+                const img = new Image();
+                img.src = `./assets/balls/ball_${i}.png`;
+                map.ballImages.push(img);
+                createBall(new Vector((cnv.width / 2 - cnv.offsetLeft) * map.ballPos[i].x, ((cnv.height / 2) - cnv.offsetTop) * map.ballPos[i].y));
+            }
+
+            map.playerBall = map.balls[0];
+
+            map.goalPosition.push(new Vector(map.position.x, map.position.y));
+            map.goalPosition.push(new Vector((map.position.x + map.size.x) / 2, map.position.y * 0.9));
+            map.goalPosition.push(new Vector(map.size.x, map.position.y));
+            map.goalPosition.push(new Vector(map.position.x, map.size.y));
+            map.goalPosition.push(new Vector((map.position.x + map.size.x) / 2, map.size.y * 1.02));
+            map.goalPosition.push(new Vector(map.size.x, map.size.y));
+
+
+            map.currentPlayer = map.players.player1;
+
+            document.getElementById("body").addEventListener("keydown", KeyboardEventHandler);
+
+            setInterval(update, map.delayBTWFram);
+        }
+
+        function update() {
+            if (map.currentGameState === GAMESTATES.paused) {
+                UIManager.manager.update(context, map);
+            }
+            else {
+                context.textAlign = "left";
+                context.drawImage(backgroundTexture, 0, 0, cnv.clientWidth, cnv.height);
+                context.fillStyle = map.currentPlayer.number === map.players.player1.number ? "red" : "white";
+                context.font = "50px Aarial";
+                context.fillText("Player 1", map.size.x * 0.1, map.size.y * 0.08);
+
+                context.fillStyle = map.currentPlayer.number === map.players.player2.number ? "red" : "white";
+                context.font = "50px Aarial";
+                context.fillText("Player 2", map.size.x * 0.8, map.size.y * 0.08);
+
+                if (map.currentPlayer.ballType === "") {
+                    context.drawImage(map.ballImages[0], map.size.x * 0.2, map.size.y * 0.03, 50, 50);
+                    context.drawImage(map.ballImages[0], map.size.x * 0.9, map.size.y * 0.03, 50, 50);
+                }
+                else {
+                    context.drawImage(map.ballImages[map.players.player1.ballType === BALLSTATE.full ? 1 : 9], map.size.x * 0.2, map.size.y * 0.03, 50, 50);
+                    context.drawImage(map.ballImages[map.players.player2.ballType === BALLSTATE.full ? 1 : 9], map.size.x * 0.9, map.size.y * 0.03, 50, 50);
+                }
+
+                if (map.visualVector != null) {
+                    map.visualVector.render(context, cnv);
+                }
+
+                ParticleManager.manager.update(context);
+
+                for (let ball of [...map.balls]) {
+                    if (map.currentGameState === GAMESTATES.running) {
+                        ball.update(map, map.balls);
+                    }
+                    if (map.currentGameState === GAMESTATES.running || map.currentGameState === GAMESTATES.positionBall) {
+                        ball.render(context, map.ballImages[ball.value]);
+                    }
+                }
+
+                updateGameState();
+                if (map.debug) {
+                    for (let po of map.goalPosition) {
+                        context.fillStyle = "red";
+                        context.beginPath();
+                        context.arc(po.x, po.y, 30, 0, 6);
+                        context.fill();
+                    }
+                }
+            }
+        }
+
+        function updateGameState() {
+            let ballStoppedMoveing = true;
+            for (let ball of map.balls) {
+                if (Vector.length(ball.velocity) !== 0 || ball.angularVelocity !== 0) {
+                    ballStoppedMoveing = false;
+                }
+            }
+            if (ballStoppedMoveing) {
+                if (!map.inRound) {
+                    map.inRound = true;
+                    verifyGameRules();
+                    verifyGameEvents();
+                }
+                if (!map.currentPlayer.canPlay) {
+                    changePlayer();
+                }
+            }
+        }
+
+        function updateBallLogic(ball) {
+            if (ball.state === BALLSTATE.black) {
+                map.currentGameState === GAMESTATES.endGame;
+
+                let winner;
+
+                const playerBalls = [...map.balls].filter((ball) => ball.state === map.currentPlayer.ballType);
+
+                if (playerBalls.length === 0 && map.currentPlayer.ballType != "" && map.roundEventLog.colisions.length > 2) {
+                    winner = map.currentPlayer.number;
+                }
+                else {
+                    switch (map.currentPlayer) {
+                        case map.players.player1: winner = map.players.player2.number; break;
+                        case map.players.player2: winner = map.players.player1.number; break;
+                    }
+                }
+
+
+                UIManager.manager.showUI("endGameUI", winner, map);
+            }
+
+            if (map.currentPlayer.ballType === "") {
+                map.currentPlayer.ballType = ball.state;
+                if (map.currentPlayer.number === 1) {
+                    if (ball.state === BALLSTATE.full) {
+                        map.players.player2.ballType = BALLSTATE.half;
+                    }
+                    else {
+                        map.players.player2.ballType = BALLSTATE.full;
+                    }
+                }
+                else {
+                    if (ball.state === BALLSTATE.full) {
+                        map.players.player1.ballType = BALLSTATE.half;
+                    }
+                    else {
+                        map.players.player1.ballType = BALLSTATE.full;
+                    }
+                }
+            }
+            if (map.currentPlayer.ballType === ball.state) {
+                map.currentPlayer.canPlay = true;
+            }
+        }
+
+        function verifyGameRules() {
+
+            if (!map.debug) {
+                if (!map.currentPlayer.canPlay && [...map.roundEventLog.colisions].filter((colision) => colision instanceof Ball).length === 0) {
+                    map.setPlayerBall(map.playerBall);
+                }
+                else if (map.currentPlayer.ballType !== "" && map.roundEventLog.colisions[0] instanceof Ball && (map.roundEventLog.colisions[0].state !== map.currentPlayer.ballType && map.roundEventLog.colisions[0].state !== BALLSTATE.black)) {
+                    map.setPlayerBall(map.playerBall);
+                }
+            }
+            map.roundEventLog.colisions = [];
+        }
+
+        function verifyGameEvents() {
+            for (let event of map.roundEventLog.events) {
+                switch (event) {
+                    case "SinkBall": map.currentPlayer.canPlay = false; positionPlayerBall(); break;
+                    case "SinkWrongBall": map.currentPlayer.canPlay = false; positionPlayerBall(); break;
+                }
+            }
+
+            map.roundEventLog.events = [];
+        }
+
+        function mouseDown(event) {
+
+            if (event.button == 0 && map.currentPlayer.canPlay && map.currentGameState === GAMESTATES.running) {
+                const position = new Vector(event.clientX - cnv.offsetLeft, event.clientY - cnv.offsetTop);
+                if (Ball.intersectsWithCursor(map.playerBall, position)) {
+                    map.visualVector = new VisualVector(map.playerBall.position, position);
+                }
+            }
+            if (UIManager.manager.getCurrentUI() instanceof EndGameUI) {
+                location.reload();
+            }
+            if (map.currentGameState === GAMESTATES.positionBall &&
+                !Ball.intersectsWithBalls(map.playerBall, map.balls) &&
+                !map.playerBall.goalColision(map) &&
+                Ball.isBallInMap(map.playerBall, map)) {
+                map.currentGameState = GAMESTATES.running;
+            }
+        }
+
+
+        function mouseMove(event) {
+            const position = new Vector(event.clientX - cnv.offsetLeft, event.clientY - cnv.offsetTop);
+            if (map.visualVector != null) {
+                map.visualVector.endPosition = position;
+            }
+            if (map.currentGameState === GAMESTATES.positionBall) {
+                map.playerBall.position = map.playerBall.newPosition = position;
+            }
+        }
+
+        function mouseUp(event) {
+            if (map.visualVector != null) {
+                map.playerBall.newVelocity = Vector.reverse(Vector.truncate(Vector.multiply(Vector.substractVectors(map.visualVector.endPosition, map.visualVector.startPosition), map.shotForceMultiplier), map.maxShotPower));
+                map.visualVector = null;
+                map.currentPlayer.canPlay = false;
+                map.inRound = false;
+                if (map.currentPlayer.ballType === "") {
+                    map.roundEventLog.colisions.push("notDefinedYet");
+                }
+            }
+        }
+
+        function KeyboardEventHandler(event) {
+            if (event.key === "Escape") {
+                if (map.currentGameState === GAMESTATES.running) {
+                    UIManager.manager.showUI("pauseMenuUI", null, map);
+                }
+                else {
+                    UIManager.manager.closeUI(map);
+                }
+            }
+        }
+
+        function positionPlayerBall() {
+            map.playerBall.newPosition = new Vector(map.size.x / 2 * map.ballPos[0].x, map.size.y / 2 + map.position.y / 2);
+            map.playerBall.newVelocity = Vector.zero();
+            map.playerBall.newAngularVelocity = 0;
+            map.playerBall.angle = 0;
+            map.playerBall.visible = true;
+            UIManager.manager.showUI("informationPanelUI", "Place WHITE Ball!", map);
+            setTimeout(() => {
+                UIManager.manager.closeUI(map);
+                map.currentGameState = GAMESTATES.positionBall;
+            }, 500);
+        }
+
+        function changePlayer(replay) {
+            if (!replay) {
+                switch (map.currentPlayer.number) {
+                    case 1: map.currentPlayer = map.players.player2; break;
+                    case 2: map.currentPlayer = map.players.player1; break;
+                }
+            }
+            map.currentPlayer.canPlay = true;
+        }
+
+        function createBall(position) {
+            // const radius = Math.round(Math.random() * 50) + 25;
+            const radius = map.ballRadius;
+
+            const ball = new Ball(position, radius, new Vector(0, 0), map.balls.length, map.ballElasticity);
+            map.balls.push(ball);
+        }
+        init();
+    </script>
+</body>
+
+</html>
