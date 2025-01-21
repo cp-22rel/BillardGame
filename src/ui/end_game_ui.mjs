@@ -8,13 +8,13 @@ class EndGameUI extends UI {
 
     render(context, map) {
         context.fillStyle = "#00000021"
-        context.fillRect(100, 100, map.size.x - 100, map.size.y - 100);
+        context.fillRect(map.position.x, map.position.y, map.size.x - map.position.x, map.size.y - map.position.y);
 
         context.fillStyle = "#ffffff";
         context.font = "50px Aarial";
         context.textAlign = "center";
-        context.fillText("Player " + this.winner + " Won the game!!", map.size.x / 2, map.size.y * 0.3);
-        context.fillText("Click to rematch!", map.size.x / 2, map.size.y * 0.7);
+        context.fillText("Player " + this.winner + " Won the game!!", map.canvas.size.x / 2, map.canvas.size.y * 0.3);
+        context.fillText("Click to rematch!", map.canvas.size.x / 2, map.canvas.size.y / 2);
     }
 }
 

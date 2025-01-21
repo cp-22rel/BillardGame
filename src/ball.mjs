@@ -53,7 +53,7 @@ class Ball {
             this.currentCouldown = this.traceCouldown;
         }
         this.currentCouldown--;
-        this.angularVelocity = Math.min(this.newAngularVelocity, 360);
+        this.angularVelocity = Math.max(Math.min(this.newAngularVelocity, 360), -360);
 
         const speed = Vector.length(this.velocity);
 
@@ -115,7 +115,7 @@ class Ball {
             wallColision = true;
         }
 
-        if (wallColision) {
+        if (wallColision && this.visible) {
             this.colisionsEffect(Vector.addVectors(this.position, this.velocity), 5);
         }
         if (map.playerBall === this && wallColision) {
@@ -154,7 +154,9 @@ class Ball {
                 const diff = hyp - (this.radius + other.radius);
                 if (diff < 0) {
 
-                    this.colisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
+                    if (this.visible && other.visible) {
+                        this.colisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
+                    }
 
                     if (this === map.playerBall || other === map.playerBall) {
                         map.roundEventLog.colisions.push(this.state === BALLSTATE.white ? other : this);

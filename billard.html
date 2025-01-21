@@ -6,11 +6,80 @@
     <link rel="shortcut icon" href="#">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Billard</title>
+    <style>
+        html {
+            overflow: hidden;
+        }
+
+        #cnvDisplay {
+            position: relative;
+        }
+
+        #PauseMenu {
+            display: none;
+            position: absolute;
+            margin: 200px;
+            color: #fff;
+            top: 0;
+            left: 0;
+        }
+
+        .buttonList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .valueInput {
+            width: 50px;
+        }
+
+        li {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 
 <body id="body">
     <canvas id="cnvDisplay" width="2500px" height="1000px"></canvas>
+    <div id="PauseMenu">
+        <ul class="buttonList">
+            <li>
+                <input id="debug" type="checkbox">&emsp; Debug Mode
+            </li>
+            <li>
+                <input id="maxShotPower" class="valueInput" type="text">&emsp; Max Shot Power
+            </li>
+            <li>
+                <input id="shotForceMultiplier" class="valueInput" type="text">&emsp; Shot Force Multiplier
+            </li>
+            <li>
+                <input id="ballRadius" class="valueInput" type="text">&emsp; Ball Radius
+            </li>
+            <li>
+                <input id="delayBTWFram" class="valueInput" type="text">&emsp; Delay Between Frame
+            </li>
+            <li>
+                <input id="friction" class="valueInput" type="text">&emsp; Friction
+            </li>
+            <li>
+                <input id="velocityLost" class="valueInput" type="text">&emsp; Ball Velocity Lost Per Frame
+            </li>
+            <li>
+                <input id="airDensity" class="valueInput" type="text">&emsp; Air Density
+            </li>
+            <li>
+                <input id="ballElasticity" class="valueInput" type="text">&emsp; Ball Elasticity
+            </li>
+            <li>
+                <input id="gravity" class="valueInput" type="text">&emsp; Gravity
+            </li>
+            <li>
+                <input id="torqueMultiplier" class="valueInput" type="text">&emsp; Torque Multiplier
+            </li>
 
+        </ul>
+    </div>
 
     <script type="module">
         import { Ball, BALLSTATE } from "./src/ball.mjs";
@@ -77,6 +146,7 @@
                 ball.visible = false;
                 ball.position = new Vector(-ball.radius, - ball.radius);
                 ball.newVelocity = Vector.zero();
+                ball.newAngularVelocity = 0;
                 map.roundEventLog.events.push("SinkBall");
             },
 
@@ -107,9 +177,26 @@
         };
 
         function init() {
-            cnv.addEventListener("mousemove", mouseMove);
-            cnv.addEventListener("mousedown", mouseDown);
-            cnv.addEventListener("mouseup", mouseUp);
+            const body = document.getElementById("body");
+
+            body.addEventListener("mousemove", mouseMove);
+            body.addEventListener("mousedown", mouseDown);
+            body.addEventListener("mouseup", mouseUp);
+            body.addEventListener("keydown", KeyboardEventHandler);
+
+            document.getElementById("debug").checked = map.debug;
+            document.getElementById("debug").addEventListener("click", (event) => map.debug = !map.debug);
+            document.getElementById("maxShotPower").value = map.maxShotPower;
+            document.getElementById("shotForceMultiplier").value = map.shotForceMultiplier;
+            document.getElementById("ballRadius").value = map.ballRadius;
+            document.getElementById("delayBTWFram").value = map.delayBTWFram;
+            document.getElementById("friction").value = map.friction;
+            document.getElementById("velocityLost").value = map.velocityLost;
+            document.getElementById("ballElasticity").value = map.ballElasticity;
+            document.getElementById("airDensity").value = map.airDensity;
+            document.getElementById("gravity").value = map.gravity;
+            document.getElementById("torqueMultiplier").value = map.torqueMultiplier;
+
 
             const relSize = Math.min(window.innerWidth, window.innerHeight * 2);
 
@@ -140,8 +227,6 @@
 
 
             map.currentPlayer = map.players.player1;
-
-            document.getElementById("body").addEventListener("keydown", KeyboardEventHandler);
 
             setInterval(update, map.delayBTWFram);
         }
@@ -332,8 +417,20 @@
             if (event.key === "Escape") {
                 if (map.currentGameState === GAMESTATES.running) {
                     UIManager.manager.showUI("pauseMenuUI", null, map);
+                    document.getElementById("PauseMenu").style.display = "inline";
                 }
                 else {
+                    document.getElementById("PauseMenu").style.display = "none";
+                    map.maxShotPower = document.getElementById("maxShotPower").value;
+                    map.shotForceMultiplier = document.getElementById("shotForceMultiplier").value;
+                    map.ballRadius = document.getElementById("ballRadius").value;
+                    map.delayBTWFram = document.getElementById("delayBTWFram").value;
+                    map.friction = document.getElementById("friction").value;
+                    map.velocityLost = document.getElementById("velocityLost").value;
+                    map.ballElasticity = document.getElementById("ballElasticity").value;
+                    map.airDensity = document.getElementById("airDensity").value;
+                    map.gravity = document.getElementById("gravity").value;
+                    map.torqueMultiplier = document.getElementById("torqueMultiplier").value;
                     UIManager.manager.closeUI(map);
                 }
             }
