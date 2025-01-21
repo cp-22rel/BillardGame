@@ -117,23 +117,23 @@ class Ball {
         }
 
         if (wallColision && this.visible) {
-            this.colisionsEffect(Vector.addVectors(this.position, this.velocity), 5);
+            this.collisionsEffect(Vector.addVectors(this.position, this.velocity), 5);
             AudioManager.manager.playAudio("ballCollision");
         }
         if (map.playerBall === this && wallColision) {
             map.roundEventLog.colisions.push("wallCollision");
         }
 
-        this.colisionHandler(others, map);
-        if (this.goalColision(map)) {
+        this.collisionHandler(others, map);
+        if (this.goalCollision(map)) {
             if (map.playerBall === this) {
                 AudioManager.manager.playAudio("wrong");
-                this.colisionsEffect(this.position, 80, "#ff111188", 2, true);
+                this.collisionsEffect(this.position, 80, "#ff111188", 2, true);
                 map.setPlayerBall(this);
             }
             else {
                 AudioManager.manager.playAudio("goal");
-                this.colisionsEffect(this.position, 80, "#ffff1188", 4);
+                this.collisionsEffect(this.position, 80, "#ffff1188", 4);
                 if (map.currentPlayer.ballType !== this.state) {
                     map.roundEventLog.events.push("sinkWrongBall");
                 }
@@ -152,7 +152,7 @@ class Ball {
         }
     }
 
-    colisionHandler(others, map) {
+    collisionHandler(others, map) {
         for (let other of others) {
             if (this != other && other.isPhysical && this.isPhysical) {
                 const offset = Vector.substractVectors(other.position, this.position);
@@ -161,7 +161,7 @@ class Ball {
                 if (diff < 0) {
                     const colisionStrength = Vector.length(this.velocity) + Vector.length(other.velocity);
                     if (this.visible && other.visible && colisionStrength > 2) {
-                        this.colisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
+                        this.collisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
                         AudioManager.manager.playAudio("ballCollision");
                     }
 
@@ -206,7 +206,7 @@ class Ball {
         }
     }
 
-    goalColision(map) {
+    goalCollision(map) {
         for (let goal of map.goalPosition) {
             if (Vector.distanceTo(this.position, goal) <= this.radius * 2) {
                 return true;
@@ -238,7 +238,7 @@ class Ball {
         return value - (strength * (value / Math.abs(value)))
     }
 
-    colisionsEffect(position, count, color, velocityMultiplier, ignorePause) {
+    collisionsEffect(position, count, color, velocityMultiplier, ignorePause) {
         for (let i = 0; i < count; i++) {
             const velocity = new Vector((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
             ParticleManager.manager.createParticle(new ColorParticle(

@@ -430,9 +430,10 @@
             if (UIManager.manager.getCurrentUI() instanceof EndGameUI) {
                 location.reload();
             }
+            console.log(map.currentGameState);
             if (map.currentGameState === GAMESTATES.positionBall &&
                 !Ball.intersectsWithBalls(map.playerBall, map.balls) &&
-                !map.playerBall.goalColision(map) &&
+                !map.playerBall.goalCollision(map) &&
                 Ball.isBallInMap(map.playerBall, map)) {
                 map.currentGameState = GAMESTATES.running;
             }
@@ -468,7 +469,7 @@
                     UIManager.manager.showUI("pauseMenuUI", null, map);
                     document.getElementById("PauseMenu").style.display = "inline";
                 }
-                else {
+                else if (map.currentGameState !== GAMESTATES.positionBall) {
                     document.getElementById("PauseMenu").style.display = "none";
                     map.maxShotPower = document.getElementById("maxShotPower").value;
                     map.shotForceMultiplier = document.getElementById("shotForceMultiplier").value;
