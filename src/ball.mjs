@@ -1,6 +1,7 @@
 import { Vector } from "./vector.mjs";
 import { ParticleManager } from "./particle_system/particle_manager.mjs";
 import { ColorParticle } from "./particle_system/color_particle.mjs";
+import { AudioManager } from "./audio_manager.mjs";
 
 const BALLSTATE = {
     full: "full",
@@ -117,6 +118,7 @@ class Ball {
 
         if (wallColision && this.visible) {
             this.colisionsEffect(Vector.addVectors(this.position, this.velocity), 5);
+            AudioManager.manager.playAudio("ballCollision");
         }
         if (map.playerBall === this && wallColision) {
             map.roundEventLog.colisions.push("wallCollision");
@@ -125,9 +127,13 @@ class Ball {
         this.colisionHandler(others, map);
         if (this.goalColision(map)) {
             if (map.playerBall === this) {
+                AudioManager.manager.playAudio("wrong");
+                this.colisionsEffect(this.position, 80, "#ff111188", 2, true);
                 map.setPlayerBall(this);
             }
             else {
+                AudioManager.manager.playAudio("goal");
+                this.colisionsEffect(this.position, 80, "#ffff1188", 4);
                 if (map.currentPlayer.ballType !== this.state) {
                     map.roundEventLog.events.push("sinkWrongBall");
                 }
@@ -153,9 +159,10 @@ class Ball {
                 const hyp = Vector.length(offset);
                 const diff = hyp - (this.radius + other.radius);
                 if (diff < 0) {
-
-                    if (this.visible && other.visible) {
+                    const colisionStrength = Vector.length(this.velocity) + Vector.length(other.velocity);
+                    if (this.visible && other.visible && colisionStrength > 2) {
                         this.colisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
+                        AudioManager.manager.playAudio("ballCollision");
                     }
 
                     if (this === map.playerBall || other === map.playerBall) {
@@ -231,17 +238,18 @@ class Ball {
         return value - (strength * (value / Math.abs(value)))
     }
 
-    colisionsEffect(position, count) {
+    colisionsEffect(position, count, color, velocityMultiplier, ignorePause) {
         for (let i = 0; i < count; i++) {
             const velocity = new Vector((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
             ParticleManager.manager.createParticle(new ColorParticle(
-                "#ffffffdd",
+                color ?? "#ffffffdd",
                 40,
                 position,
-                velocity,
+                Vector.multiply(velocity, velocityMultiplier ?? 1),
                 new Vector(20, 20),
                 new Vector(-0.5, -0.5),
                 Math.atan2(velocity.y, velocity.x),
+                ignorePause,
             )
             );
         }

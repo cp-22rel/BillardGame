@@ -2,8 +2,8 @@ import { Particle } from "./particle.mjs";
 import { Vector } from "../vector.mjs";
 
 class ColorParticle extends Particle {
-    constructor(color, lifeTime, position, velocity, size, sizeModifier, angle) {
-        super(position, lifeTime);
+    constructor(color, lifeTime, position, velocity, size, sizeModifier, angle, ignorePause) {
+        super(position, lifeTime, ignorePause);
 
         this.color = color;
         super.velocity = velocity;

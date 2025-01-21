@@ -1,6 +1,6 @@
 import { Vector } from "../vector.mjs";
 class Particle {
-    constructor(position, lifeTime) {
+    constructor(position, lifeTime, ignorePause) {
         this.lifeTime = lifeTime;
 
         this.velocity = Vector.zero();
@@ -8,6 +8,7 @@ class Particle {
         this.position = position;
         this.angle = 0;
         this.angularVelocity = 0;
+        this.ignorePause = ignorePause ?? false;
     }
 
     update() { }

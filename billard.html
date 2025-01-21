@@ -17,14 +17,31 @@
 
         #PauseMenu {
             display: none;
+        }
+
+        .buttonList {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .modifiers {
             position: absolute;
-            margin: 200px;
+            padding: 200px;
             color: #fff;
             top: 0;
             left: 0;
         }
 
-        .buttonList {
+        .settings {
+            position: absolute;
+            padding: 200px;
+            color: #fff;
+            top: 0;
+            right: 0;
+        }
+
+        .settingsList {
             list-style-type: none;
             padding: 0;
             margin: 0;
@@ -43,42 +60,54 @@
 <body id="body">
     <canvas id="cnvDisplay" width="2500px" height="1000px"></canvas>
     <div id="PauseMenu">
-        <ul class="buttonList">
-            <li>
-                <input id="debug" type="checkbox">&emsp; Debug Mode
-            </li>
-            <li>
-                <input id="maxShotPower" class="valueInput" type="text">&emsp; Max Shot Power
-            </li>
-            <li>
-                <input id="shotForceMultiplier" class="valueInput" type="text">&emsp; Shot Force Multiplier
-            </li>
-            <li>
-                <input id="ballRadius" class="valueInput" type="text">&emsp; Ball Radius
-            </li>
-            <li>
-                <input id="delayBTWFram" class="valueInput" type="text">&emsp; Delay Between Frame
-            </li>
-            <li>
-                <input id="friction" class="valueInput" type="text">&emsp; Friction
-            </li>
-            <li>
-                <input id="velocityLost" class="valueInput" type="text">&emsp; Ball Velocity Lost Per Frame
-            </li>
-            <li>
-                <input id="airDensity" class="valueInput" type="text">&emsp; Air Density
-            </li>
-            <li>
-                <input id="ballElasticity" class="valueInput" type="text">&emsp; Ball Elasticity
-            </li>
-            <li>
-                <input id="gravity" class="valueInput" type="text">&emsp; Gravity
-            </li>
-            <li>
-                <input id="torqueMultiplier" class="valueInput" type="text">&emsp; Torque Multiplier
-            </li>
+        <div class="modifiers">
+            <ul class="buttonList">
+                <li>
+                    <input id="debug" type="checkbox">&emsp; Debug Mode
+                </li>
+                <li>
+                    <input id="maxShotPower" class="valueInput" type="text">&emsp; Max Shot Power
+                </li>
+                <li>
+                    <input id="shotForceMultiplier" class="valueInput" type="text">&emsp; Shot Force Multiplier
+                </li>
+                <li>
+                    <input id="ballRadius" class="valueInput" type="text">&emsp; Ball Radius
+                </li>
+                <li>
+                    <input id="delayBTWFram" class="valueInput" type="text">&emsp; Delay Between Frame
+                </li>
+                <li>
+                    <input id="friction" class="valueInput" type="text">&emsp; Friction
+                </li>
+                <li>
+                    <input id="velocityLost" class="valueInput" type="text">&emsp; Ball Velocity Lost Per Frame
+                </li>
+                <li>
+                    <input id="airDensity" class="valueInput" type="text">&emsp; Air Density
+                </li>
+                <li>
+                    <input id="ballElasticity" class="valueInput" type="text">&emsp; Ball Elasticity
+                </li>
+                <li>
+                    <input id="gravity" class="valueInput" type="text">&emsp; Gravity
+                </li>
+                <li>
+                    <input id="torqueMultiplier" class="valueInput" type="text">&emsp; Torque Multiplier
+                </li>
 
-        </ul>
+            </ul>
+        </div>
+        <div class="settings">
+            <ul class="settingsList">
+                <li>
+                    <h3>Music Volume</h3><input id="musicVolume" type="range" value="50" max="100" min="0">
+                </li>
+                <li>
+                    <h3>Sound Effect Volume</h3><input id="soundEffectVolume" type="range" value="50" max="100" min="0">
+                </li>
+            </ul>
+        </div>
     </div>
 
     <script type="module">
@@ -89,6 +118,7 @@
         import { UIManager } from "./src/ui_manager.mjs";
         import { EndGameUI } from "./src/ui/end_game_ui.mjs";
         import { ParticleManager } from "./src/particle_system/particle_manager.mjs";
+        import { AudioManager } from "./src/audio_manager.mjs";
 
 
         const backgroundTexture = new Image();
@@ -177,6 +207,10 @@
         };
 
         function init() {
+
+            AudioManager.manager.setMusicVolume(sessionStorage.getItem("musicVolume") ?? 0.5);
+            AudioManager.manager.setSoundEffectVolume(sessionStorage.getItem("soundEffectVolume") ?? 0.5);
+
             const body = document.getElementById("body");
 
             body.addEventListener("mousemove", mouseMove);
@@ -196,6 +230,17 @@
             document.getElementById("airDensity").value = map.airDensity;
             document.getElementById("gravity").value = map.gravity;
             document.getElementById("torqueMultiplier").value = map.torqueMultiplier;
+
+            document.getElementById("musicVolume").value = AudioManager.manager.musicVolume * 100;
+            document.getElementById("musicVolume").addEventListener("input", (event) => {
+                AudioManager.manager.setMusicVolume(event.target.value / 100);
+                sessionStorage.setItem("musicVolume", AudioManager.manager.musicVolume);
+            });
+            document.getElementById("soundEffectVolume").value = AudioManager.manager.soundEffectVolume * 100;
+            document.getElementById("soundEffectVolume").addEventListener("input", (event) => {
+                AudioManager.manager.setSoundEffectVolume(event.target.value / 100);
+                sessionStorage.setItem("soundEffectVolume", AudioManager.manager.soundEffectVolume);
+            });
 
 
             const relSize = Math.min(window.innerWidth, window.innerHeight * 2);
@@ -228,12 +273,15 @@
 
             map.currentPlayer = map.players.player1;
 
+            AudioManager.manager.playMusic("mainTheme");
+
             setInterval(update, map.delayBTWFram);
         }
 
         function update() {
             if (map.currentGameState === GAMESTATES.paused) {
                 UIManager.manager.update(context, map);
+                ParticleManager.manager.update(context, false);
             }
             else {
                 context.textAlign = "left";
@@ -407,6 +455,7 @@
                 map.visualVector = null;
                 map.currentPlayer.canPlay = false;
                 map.inRound = false;
+                AudioManager.manager.playAudio("shot");
                 if (map.currentPlayer.ballType === "") {
                     map.roundEventLog.colisions.push("notDefinedYet");
                 }
@@ -431,6 +480,7 @@
                     map.airDensity = document.getElementById("airDensity").value;
                     map.gravity = document.getElementById("gravity").value;
                     map.torqueMultiplier = document.getElementById("torqueMultiplier").value;
+
                     UIManager.manager.closeUI(map);
                 }
             }
