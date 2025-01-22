@@ -159,7 +159,7 @@ class Ball {
                 const hyp = Vector.length(offset);
                 const diff = hyp - (this.radius + other.radius);
                 if (diff < 0) {
-                    const colisionStrength = Vector.length(this.velocity) + Vector.length(other.velocity);
+                    const colisionStrength = Vector.length(Vector.addVectors(this.velocity, other.velocity));
                     if (this.visible && other.visible && colisionStrength > 2) {
                         this.collisionsEffect(Vector.addVectors(this.position, Vector.divide(offset, 2)), 2);
                         AudioManager.manager.playAudio("ballCollision");
