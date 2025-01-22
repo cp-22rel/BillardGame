@@ -407,7 +407,6 @@
             if (UIManager.manager.getCurrentUI() instanceof EndGameUI) {
                 location.reload();
             }
-            console.log(map.currentGameState);
             if (map.currentGameState === GAMESTATES.positionBall &&
                 !Ball.intersectsWithBalls(map.playerBall, map.balls) &&
                 !map.playerBall.goalCollision(map) &&
