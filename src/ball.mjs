@@ -11,7 +11,7 @@ const BALLSTATE = {
 };
 
 class Ball {
-    constructor(position, radius, velocity, value, elasticity) {
+    constructor(position, radius, velocity, value) {
         this.position = this.newPosition = position;
         this.radius = radius;
         this.weight = radius * radius;
@@ -38,7 +38,6 @@ class Ball {
             state = BALLSTATE.half;
         }
         this.state = state;
-        this.elasticity = this.elasticity ?? 1;
     }
 
     update(map, others) {
@@ -182,7 +181,7 @@ class Ball {
                     const m1 = this.weight;
                     const m2 = other.weight;
 
-                    const newVel = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * this.elasticity) / (m1 + m2);
+                    const newVel = (m1 * v1 + m2 * v2 - m2 * (v1 - v2) * map.ballElasticity) / (m1 + m2);
 
                     this.newAngularVelocity = (this.angularVelocity * this.inertia + other.angularVelocity * other.inertia) / (this.inertia + other.inertia);
                     const normal = new Vector(offset.x / hyp, offset.y / hyp);

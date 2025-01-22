@@ -72,12 +72,6 @@
                     <input id="shotForceMultiplier" class="valueInput" type="text">&emsp; Shot Force Multiplier
                 </li>
                 <li>
-                    <input id="ballRadius" class="valueInput" type="text">&emsp; Ball Radius
-                </li>
-                <li>
-                    <input id="delayBTWFram" class="valueInput" type="text">&emsp; Delay Between Frame
-                </li>
-                <li>
                     <input id="friction" class="valueInput" type="text">&emsp; Friction
                 </li>
                 <li>
@@ -174,7 +168,7 @@
             },
             setPlayerBall: function (ball) {
                 ball.visible = false;
-                ball.position = new Vector(-ball.radius, - ball.radius);
+                ball.position = new Vector(map.size.x / 2, map.size.y / 2);
                 ball.newVelocity = Vector.zero();
                 ball.newAngularVelocity = 0;
                 map.roundEventLog.events.push("SinkBall");
@@ -222,8 +216,6 @@
             document.getElementById("debug").addEventListener("click", (event) => map.debug = !map.debug);
             document.getElementById("maxShotPower").value = map.maxShotPower;
             document.getElementById("shotForceMultiplier").value = map.shotForceMultiplier;
-            document.getElementById("ballRadius").value = map.ballRadius;
-            document.getElementById("delayBTWFram").value = map.delayBTWFram;
             document.getElementById("friction").value = map.friction;
             document.getElementById("velocityLost").value = map.velocityLost;
             document.getElementById("ballElasticity").value = map.ballElasticity;
@@ -351,24 +343,7 @@
 
         function updateBallLogic(ball) {
             if (ball.state === BALLSTATE.black) {
-                map.currentGameState === GAMESTATES.endGame;
-
-                let winner;
-
-                const playerBalls = [...map.balls].filter((ball) => ball.state === map.currentPlayer.ballType);
-
-                if (playerBalls.length === 0 && map.currentPlayer.ballType != "" && map.roundEventLog.colisions.length > 2) {
-                    winner = map.currentPlayer.number;
-                }
-                else {
-                    switch (map.currentPlayer) {
-                        case map.players.player1: winner = map.players.player2.number; break;
-                        case map.players.player2: winner = map.players.player1.number; break;
-                    }
-                }
-
-
-                UIManager.manager.showUI("endGameUI", winner, map);
+                map.roundEventLog.events.push("sinkBlackBall");
             }
 
             if (map.currentPlayer.ballType === "") {
@@ -413,6 +388,7 @@
                 switch (event) {
                     case "SinkBall": map.currentPlayer.canPlay = false; positionPlayerBall(); break;
                     case "SinkWrongBall": map.currentPlayer.canPlay = false; positionPlayerBall(); break;
+                    case "sinkBlackBall": endGame(); break;
                 }
             }
 
@@ -471,16 +447,44 @@
                 }
                 else if (map.currentGameState !== GAMESTATES.positionBall) {
                     document.getElementById("PauseMenu").style.display = "none";
-                    map.maxShotPower = document.getElementById("maxShotPower").value;
-                    map.shotForceMultiplier = document.getElementById("shotForceMultiplier").value;
-                    map.ballRadius = document.getElementById("ballRadius").value;
-                    map.delayBTWFram = document.getElementById("delayBTWFram").value;
-                    map.friction = document.getElementById("friction").value;
-                    map.velocityLost = document.getElementById("velocityLost").value;
-                    map.ballElasticity = document.getElementById("ballElasticity").value;
-                    map.airDensity = document.getElementById("airDensity").value;
-                    map.gravity = document.getElementById("gravity").value;
-                    map.torqueMultiplier = document.getElementById("torqueMultiplier").value;
+                    const maxShotPower = document.getElementById("maxShotPower").value;
+                    if (!isNaN(maxShotPower)) {
+                        map.maxShotPower = maxShotPower;
+                    }
+
+                    const shotForceMultiplier = document.getElementById("shotForceMultiplier").value;
+                    if (!isNaN(shotForceMultiplier)) {
+                        map.shotForceMultiplier = shotForceMultiplier;
+                    }
+
+                    const friction = document.getElementById("friction").value;
+                    if (!isNaN(friction)) {
+                        map.friction = friction;
+                    }
+
+                    const velocityLost = document.getElementById("velocityLost").value;
+                    if (!isNaN(velocityLost)) {
+                        map.velocityLost = velocityLost;
+                    }
+
+                    const ballElasticity = document.getElementById("ballElasticity").value;
+                    if (!isNaN(ballElasticity)) {
+                        map.ballElasticity = ballElasticity;
+                    }
+
+                    const airDensity = document.getElementById("airDensity").value;
+                    if (!isNaN(airDensity)) {
+                        map.airDensity = airDensity;
+                    }
+
+                    const gravity = document.getElementById("gravity").value;
+                    if (!isNaN(gravity)) {
+                        map.gravity = gravity;
+                    }
+                    const torqueMultiplier = document.getElementById("torqueMultiplier").value;
+                    if (!isNaN(torqueMultiplier)) {
+                        map.torqueMultiplier = torqueMultiplier;
+                    }
 
                     UIManager.manager.closeUI(map);
                 }
@@ -514,8 +518,29 @@
             // const radius = Math.round(Math.random() * 50) + 25;
             const radius = map.ballRadius;
 
-            const ball = new Ball(position, radius, new Vector(0, 0), map.balls.length, map.ballElasticity);
+            const ball = new Ball(position, radius, new Vector(0, 0), map.balls.length);
             map.balls.push(ball);
+        }
+
+        function endGame() {
+            map.currentGameState === GAMESTATES.endGame;
+
+            let winner;
+
+            const playerBalls = [...map.balls].filter((ball) => ball.state === map.currentPlayer.ballType);
+
+            if (playerBalls.length === 0 && map.currentPlayer.ballType != "" && map.roundEventLog.colisions.length > 2) {
+                winner = map.currentPlayer.number;
+            }
+            else {
+                switch (map.currentPlayer) {
+                    case map.players.player1: winner = map.players.player2.number; break;
+                    case map.players.player2: winner = map.players.player1.number; break;
+                }
+            }
+
+
+            UIManager.manager.showUI("endGameUI", winner, map);
         }
         init();
     </script>
