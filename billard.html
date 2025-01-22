@@ -168,7 +168,8 @@
             },
             setPlayerBall: function (ball) {
                 ball.visible = false;
-                ball.position = new Vector(map.size.x / 2, map.size.y / 2);
+                console.log(ball.position);
+                ball.position = ball.newPosition = new Vector(map.size.x / 2, map.size.y / 2);
                 ball.newVelocity = Vector.zero();
                 ball.newAngularVelocity = 0;
                 map.roundEventLog.events.push("SinkBall");
